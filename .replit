@@ -23,7 +23,7 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "npm run dev"
+args = "node -e \"const h=require('http'),f=require('fs');h.createServer((q,r)=>{r.writeHead(200,{'Content-Type':'text/plain'});r.end(f.readFileSync('README.md','utf8'));}).listen(5000,'0.0.0.0');\""
 waitForPort = 5000
 
 [workflows.workflow.metadata]
