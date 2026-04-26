@@ -32,11 +32,18 @@ Copy the example environment file and fill in your own values:
 cp .env.example .env
 ```
 
-Open `.env` and set secure passwords:
+Generate a required application key first (Docker must be running):
+
+```bash
+docker run -it --rm --entrypoint /bin/bash lscr.io/linuxserver/bookstack:latest appkey
+```
+
+This outputs a value like `APP_KEY=base64:xxxx...`. Copy it, then open `.env` and fill in all values:
 
 ```env
 TZ=America/New_York          # Your local timezone
 APP_URL=http://localhost:8090 # URL you will access BookStack from
+APP_KEY=base64:xxxx...       # Paste the generated key here — required, app won't start without it
 
 DB_DATABASE=bookstack
 DB_USER=bookstack
