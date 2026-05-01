@@ -87,6 +87,154 @@ Default credentials:
 
 ---
 
+## Verifying the Database
+
+Use these checks to confirm MariaDB is running and the credentials in your `.env` are correct.
+
+### Check the container is healthy
+
+```bash
+docker compose ps
+```
+
+The `bookstack_db` container should show `healthy` in the Status column:
+
+```
+NAME            STATUS
+bookstack       running
+bookstack_db    running (healthy)
+```
+
+### Connect to the database directly
+
+Log in using the credentials from your `.env`:
+
+```bash
+docker exec -it bookstack_db mariadb -u bookstack -p bookstack
+```
+
+Enter `DB_PASS` when prompted. A successful login looks like:
+
+```
+Welcome to the MariaDB monitor. Commands end with ; or \g.
+MariaDB [bookstack]>
+```
+
+Type `exit` to quit.
+
+### Verify the bookstack database and tables exist
+
+After BookStack has started at least once, it runs migrations and creates all its tables. Confirm they are present:
+
+```bash
+docker exec -it bookstack_db mariadb -u bookstack -p bookstack -e "SHOW TABLES;"
+```
+
+Expected output includes tables such as `users`, `books`, `pages`, `chapters`, etc. An empty result means BookStack has not yet run its migrations — check the BookStack logs.
+
+### Test the root password
+
+```bash
+docker exec -it bookstack_db mariadb -u root -p -e "SHOW DATABASES;"
+```
+
+Enter `DB_ROOT_PASS` when prompted. You should see `bookstack` listed among the databases:
+
+```
++--------------------+
+| Database           |
++--------------------+
+| bookstack          |
+| information_schema |
+| mysql              |
++--------------------+
+```
+
+### Test connectivity from the BookStack container
+
+Confirm the BookStack container can reach the database over the internal network:
+
+```bash
+docker exec -it bookstack mariadb-admin ping -h bookstack_db -u bookstack -p
+```
+
+A working connection returns:
+
+```
+mysqld is alive
+```
+
+---
+
+## Verifying BookStack
+
+Use these checks to confirm the application is running and reachable.
+
+### Check the HTTP response
+
+```bash
+curl -o /dev/null -s -w "HTTP status: %{http_code}\n" http://localhost:8090
+```
+
+A healthy BookStack returns `HTTP status: 200`. Any other code indicates a startup problem — check logs with `docker compose logs -f bookstack`.
+
+### Confirm the login page loads
+
+```bash
+curl -s http://localhost:8090/login | grep -o "<title>.*</title>"
+```
+
+Expected output:
+
+```
+<title>Login | BookStack</title>
+```
+
+### Verify BookStack startup in logs
+
+```bash
+docker compose logs bookstack | grep -E "Server running|migrations|error" | tail -20
+```
+
+A clean startup shows lines like:
+
+```
+bookstack  | [migrations] Migration table created successfully.
+bookstack  | [migrations] Migrated: xxxx_xx_xx_xxxxxx_create_users_table
+...
+bookstack  | Server running on http://0.0.0.0:80
+```
+
+Any `error` lines in the output need investigation.
+
+### Test the BookStack API
+
+BookStack exposes a REST API. After logging in and generating a token under **Profile → API Tokens**, you can verify the API is alive:
+
+```bash
+curl -s \
+  -H "Authorization: Token YOUR_TOKEN_ID:YOUR_TOKEN_SECRET" \
+  http://localhost:8090/api/books | python3 -m json.tool
+```
+
+A working API returns a JSON object with a `data` array. Before creating an API token, you can confirm the endpoint exists with:
+
+```bash
+curl -o /dev/null -s -w "API status: %{http_code}\n" http://localhost:8090/api/books
+```
+
+This returns `API status: 401` (unauthorized) if the API is reachable, or `000` if the app is not running.
+
+### Run the BookStack built-in health check
+
+```bash
+docker exec -it bookstack php /app/www/artisan bookstack:check-config
+```
+
+This validates the full configuration — database connection, mail settings, app key, and more — and reports any problems.
+
+---
+
 ## Managing the Stack
 
 ### View running containers
