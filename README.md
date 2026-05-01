@@ -305,6 +305,14 @@ Port 8090 was chosen because port 8080 is already in use on the host machine.
 
 ## Troubleshooting
 
+**`Access denied for user 'database_username'`:**
+Your `.env` file still contains placeholder values from `.env.example`. Open `.env`, replace every placeholder with real values, then wipe the database volume and restart — the old credentials are baked into the volume and will persist until it is removed:
+```bash
+docker compose down -v
+docker compose up -d
+```
+> Do not skip `-v`. Without it the old credentials remain and the error repeats.
+
 **BookStack shows a database connection error on first start:**
 The database may still be initializing. Wait 30–60 seconds and refresh.
 
