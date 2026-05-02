@@ -366,6 +366,14 @@ Common causes and fixes:
 | `No application encryption key` | `APP_KEY` missing from `.env` | Generate a key and add it (see Setup section) |
 | `Permission denied` on storage/cache | Volume ownership issue | `docker exec -it bookstack chown -R abc:abc /config` then restart |
 
+**Stale cached config after credentials were fixed:**
+Laravel caches compiled config to disk. If it cached the wrong DB credentials from a previous run, clearing it forces a fresh read of all environment variables:
+```bash
+docker exec -it bookstack php artisan config:clear
+docker compose restart bookstack
+```
+This is safe and non-destructive — it only removes a compiled cache file.
+
 If none of the above resolves it, wipe all volumes and start clean:
 ```bash
 docker compose down -v
