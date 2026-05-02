@@ -225,13 +225,21 @@ curl -o /dev/null -s -w "API status: %{http_code}\n" http://localhost:8090/api/b
 
 This returns `API status: 401` (unauthorized) if the API is reachable, or `000` if the app is not running.
 
-### Run the BookStack built-in health check
+### Check the database connection and migration status
 
 ```bash
-docker exec -it bookstack php /app/www/artisan bookstack:check-config
+docker exec -it bookstack php /app/www/artisan migrate:status
 ```
 
-This validates the full configuration — database connection, mail settings, app key, and more — and reports any problems.
+A working database connection returns a table listing all migrations and their status. An `Access denied` error means the DB credentials are still wrong.
+
+### Check the running environment
+
+```bash
+docker exec -it bookstack php /app/www/artisan about
+```
+
+Displays the BookStack version, environment, cache driver, and other runtime details.
 
 ---
 
@@ -329,9 +337,9 @@ docker compose logs bookstack --tail=50
 docker exec -it bookstack tail -100 /config/log/bookstack/laravel.log
 ```
 
-3. Built-in config validator (checks APP_KEY, DB, permissions in one pass):
+3. Test the database connection directly (returns migration table if connected, `Access denied` if not):
 ```bash
-docker exec -it bookstack php /app/www/artisan bookstack:check-config
+docker exec -it bookstack php /app/www/artisan migrate:status
 ```
 
 Common causes and fixes:
