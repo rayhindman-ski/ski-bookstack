@@ -316,6 +316,40 @@ docker compose up -d
 **BookStack shows a database connection error on first start:**
 The database may still be initializing. Wait 30–60 seconds and refresh.
 
+**`500 Internal Server Error` in the browser:**
+Check the logs in this order:
+
+1. Container logs (quickest overview):
+```bash
+docker compose logs bookstack --tail=50
+```
+
+2. Laravel application log (most detailed — full stack traces):
+```bash
+docker exec -it bookstack tail -100 /config/log/bookstack/laravel.log
+```
+
+3. Built-in config validator (checks APP_KEY, DB, permissions in one pass):
+```bash
+docker exec -it bookstack php /app/www/artisan bookstack:check-config
+```
+
+Common causes and fixes:
+
+| Log message | Cause | Fix |
+|---|---|---|
+| `The MAC is invalid` / `DecryptException` | `APP_KEY` changed after first boot | Restore original key, or wipe volumes and restart |
+| `SQLSTATE[HY000] [1045] Access denied` | Wrong DB credentials | Fix `.env`, then `docker compose down -v && docker compose up -d` |
+| `SQLSTATE[HY000] [2002] Connection refused` | DB not ready or crashed | `docker compose restart bookstack_db`, then `docker compose restart bookstack` |
+| `No application encryption key` | `APP_KEY` missing from `.env` | Generate a key and add it (see Setup section) |
+| `Permission denied` on storage/cache | Volume ownership issue | `docker exec -it bookstack chown -R abc:abc /config` then restart |
+
+If none of the above resolves it, wipe all volumes and start clean:
+```bash
+docker compose down -v
+docker compose up -d
+```
+
 **Containers won't start:**
 Check for port conflicts or missing `.env` values:
 ```bash
