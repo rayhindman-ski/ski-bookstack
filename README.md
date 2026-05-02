@@ -14,6 +14,18 @@ This project runs [BookStack](https://www.bookstackapp.com/) — an open-source,
 
 ---
 
+## Important: How the LinuxServer BookStack image handles configuration
+
+The `lscr.io/linuxserver/bookstack` image writes its own `/config/www/.env` file **once**, the first time the container starts with an empty volume. After that it never regenerates it, even if you change your `.env` or environment variables.
+
+**This means:**
+- Your `.env` must be fully filled in with real values **before** running `docker compose up` for the first time
+- If the container ever booted with wrong or placeholder values, the cached config is poisoned and must be manually cleared (see Troubleshooting)
+
+The `docker-compose.yml` in this project passes both the LinuxServer init variables (`DB_USER`, `DB_PASS`) **and** Laravel's native variable names (`DB_USERNAME`, `DB_PASSWORD`) as OS-level environment variables. OS-level variables override the cached `.env` file on every boot, making the setup resilient to stale cached config.
+
+---
+
 ## Setup
 
 ### 1. Clone the repository
@@ -26,30 +38,32 @@ git checkout feature/init-docker
 
 ### 2. Configure environment variables
 
-Copy the example environment file and fill in your own values:
+Copy the example environment file:
 
 ```bash
 cp .env.example .env
 ```
 
-Generate a required application key first (Docker must be running):
+Generate a required application key (Docker must be running):
 
 ```bash
 docker run -it --rm --entrypoint /bin/bash lscr.io/linuxserver/bookstack:latest appkey
 ```
 
-This outputs a value like `APP_KEY=base64:xxxx...`. Copy it, then open `.env` and fill in all values:
+This outputs `APP_KEY=base64:xxxx...`. Copy it, then open `.env` and fill in **all** values with real passwords before continuing. Do not leave any placeholder values:
 
 ```env
-TZ=America/New_York          # Your local timezone
-APP_URL=http://localhost:8090 # URL you will access BookStack from
-APP_KEY=base64:xxxx...       # Paste the generated key here — required, app won't start without it
+TZ=America/New_York
+APP_URL=http://localhost:8090
+APP_KEY=base64:xxxx...        # Paste the generated key here
 
 DB_DATABASE=bookstack
 DB_USER=bookstack
-DB_PASS=your_bookstack_db_password    # Choose a strong password
-DB_ROOT_PASS=your_mariadb_root_password  # Choose a strong root password
+DB_PASS=choose_a_real_password
+DB_ROOT_PASS=choose_a_real_root_password
 ```
+
+> **Never run `docker compose up` with placeholder values in `.env`.** The image caches the config on first boot. If it initialises with placeholders, you must wipe the volume to recover (see Troubleshooting).
 
 > **Never commit `.env` to version control.** It is already listed in `.gitignore`.
 
