@@ -1,49 +1,45 @@
 services:
   bookstack:
-    image: lscr.io/linuxserver/bookstack:latest
+    image: ghcr.io/bookstackapp/bookstack:latest
     container_name: bookstack
     environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=${TZ}
       - APP_URL=${APP_URL}
       - APP_KEY=${APP_KEY}
       - DB_HOST=bookstack_db
       - DB_PORT=3306
-      - DB_USER=${DB_USER}
-      - DB_PASS=${DB_PASS}
       - DB_DATABASE=${DB_DATABASE}
-      - SMTP_HOST=${SMTP_HOST}
-      - SMTP_PORT=${SMTP_PORT}
-      - SMTP_USER=${SMTP_USER}
-      - SMTP_PASS=${SMTP_PASS}
-      - TLS_ENCRYPTION=${TLS_ENCRYPTION}
-      - SMTP_FROM_ADDR=${SMTP_FROM_ADDR}
+      - DB_USERNAME=${DB_USER}
+      - DB_PASSWORD=${DB_PASS}
+      - MAIL_DRIVER=smtp
+      - MAIL_HOST=${SMTP_HOST}
+      - MAIL_PORT=${SMTP_PORT}
+      - MAIL_USERNAME=${SMTP_USER}
+      - MAIL_PASSWORD=${SMTP_PASS}
+      - MAIL_ENCRYPTION=${TLS_ENCRYPTION}
+      - MAIL_FROM_ADDRESS=${SMTP_FROM_ADDR}
+      - MAIL_FROM_NAME=BookStack
     volumes:
-      - ./init/write-bookstack-env.sh:/custom-cont-init.d/write-bookstack-env.sh:ro
-      - bookstack_data:/config
+      - bookstack_data:/var/www/bookstack/public/uploads
+      - bookstack_storage:/var/www/bookstack/storage/uploads
     ports:
-      - "8090:80"
+      - "8090:8080"
     depends_on:
       bookstack_db:
         condition: service_healthy
     restart: unless-stopped
 
   bookstack_db:
-    image: lscr.io/linuxserver/mariadb:latest
+    image: mariadb:11
     container_name: bookstack_db
     environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=${TZ}
-      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASS}
-      - MYSQL_DATABASE=${DB_DATABASE}
-      - MYSQL_USER=${DB_USER}
-      - MYSQL_PASSWORD=${DB_PASS}
+      - MARIADB_ROOT_PASSWORD=${DB_ROOT_PASS}
+      - MARIADB_DATABASE=${DB_DATABASE}
+      - MARIADB_USER=${DB_USER}
+      - MARIADB_PASSWORD=${DB_PASS}
     volumes:
-      - bookstack_db_data:/config
+      - bookstack_db_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mariadb-admin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASS}"]
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -51,4 +47,5 @@ services:
 
 volumes:
   bookstack_data:
+  bookstack_storage:
   bookstack_db_data:
