@@ -13,6 +13,12 @@ services:
       - DB_USER=${DB_USER}
       - DB_PASS=${DB_PASS}
       - DB_DATABASE=${DB_DATABASE}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASS=${SMTP_PASS}
+      - TLS_ENCRYPTION=${TLS_ENCRYPTION}
+      - SMTP_FROM_ADDR=${SMTP_FROM_ADDR}
     volumes:
       - ./init/write-bookstack-env.sh:/custom-cont-init.d/write-bookstack-env.sh:ro
       - bookstack_data:/config
